@@ -10,7 +10,7 @@
     "start": "node server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Gabriel Morais",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.2",
@@ -18,6 +18,7 @@
     "moment": "^2.22.1",
     "morgan": "^1.9.0",
     "nodemon": "^1.17.3",
-    "twit": "^2.2.9"
+    "twit": "^2.2.9",
+    "xregexp": "^4.1.1"
   }
 }
