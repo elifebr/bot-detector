@@ -20,6 +20,16 @@ router.get('/searchTweets', function(req, res) {
 		});
 });
 
+router.get('/:statuses_id', function(req, res) {
+	twitter.get('statuses/show/:id', { id: req.params.statuses_id })
+		.catch((err) => {
+			res.status(400).send(err);
+		})
+		.then((tweet) => {
+			res.status(200).json(tweet.data);
+		});
+});
+
 router.get('/botcheck/:screen_name', function(req, res) {
 	var req_user = req.params.screen_name;
 
@@ -27,13 +37,11 @@ router.get('/botcheck/:screen_name', function(req, res) {
 		.catch((err) => {
 			res.status(400).send(err);
 		})
-		.then((user) => twitter.get('statuses/user_timeline', { screen_name: req_user, count: 10, include_rts: true })
+		.then((user) => twitter.get('statuses/user_timeline', { screen_name: req_user, count: 14, include_rts: true })
 		.catch((err) => {
 			res.status(400).send(err);
 		})
 		.then((timeline) => {
-			//is_quote_status: true
-			//text: "RT @alguem"
 			res.status(200).json(timeline.data);
 		}));
 });
