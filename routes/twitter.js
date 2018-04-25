@@ -1,6 +1,7 @@
 var express 		= require('express');
 var Twit			= require('twit');
 var config			= require('../util/config.js');
+var TwitterDetector	= require('../controllers/twitterController.js');
 
 var router 			= express.Router();
 var twitter			= new Twit(config.twitter_keys);
@@ -37,15 +38,14 @@ router.get('/botcheck/:screen_name', function(req, res) {
 		.catch((err) => {
 			res.status(400).send(err);
 		})
-		.then((user) => twitter.get('statuses/user_timeline', { screen_name: req_user, count: 14, include_rts: true })
+		.then((user) => twitter.get('statuses/user_timeline', { screen_name: req_user, count: 200, include_rts: true })
 		.catch((err) => {
 			res.status(400).send(err);
 		})
 		.then((timeline) => {
-			res.status(200).json(timeline.data);
+			var result = TwitterDetector.bot_check(user.data, timeline.data);
+			res.status(200).json(result);
 		}));
 });
-
-
 
 module.exports = router;
