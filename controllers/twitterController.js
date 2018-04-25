@@ -80,7 +80,7 @@ var is_original_post = function(tweet) {
     return !(is_retweet(tweet) && is_quote(tweet) && is_answer(tweet));
 };
 
-function update_user_stats(user, results) {
+var update_user_stats = function (user, results) {
     results.followers_following_ratio = followers_following_ratio(user.followers_count, user.friends_count);
     results.statuses_ratio = statuses_acc_age_ratio(user.created_at, user.statuses_count);
     results.is_alphanumeric = is_alphanumeric(user.name, user.screen_name);
@@ -89,7 +89,7 @@ function update_user_stats(user, results) {
     return results;
 }
 
-function update_tweets_stats(timeline, results) {
+var update_tweets_stats = function (timeline, results) {
     for (var i = 0; i < timeline.length; i++) {
         var tweet = timeline[i];
 
@@ -119,7 +119,7 @@ function update_tweets_stats(timeline, results) {
     return results;
 }
 
-function update_tweets_ratios(results, size) {
+var update_tweets_ratios = function (results, size) {
     results.tweets.has_link.ratio = results.tweets.has_link.count / size;
     results.tweets.is_retweet.ratio = results.tweets.is_retweet.count / size;
     results.tweets.is_fake_rt.ratio = results.tweets.is_fake_rt.count / size;
@@ -128,6 +128,41 @@ function update_tweets_ratios(results, size) {
     results.tweets.is_original_post.ratio = results.tweets.is_original_post.count / size;
 
     return results;
+}
+
+var bot_analysis = function(results) {
+    var weigth = results.followers_following_ratio * 7 +
+                results.statuses_ratio * 1.6 +
+                results.tweets.has_link.ratio * 100 * 1.2 +
+                results.tweets.is_retweet.ratio * 100 * 1.1 +
+                results.tweets.is_quote.ratio * 100 +
+                results.tweets.is_fake_rt.ratio * 100 * 2;
+
+    if (weigth - results.tweets.is_answer.ratio * 100 * 0.5 > 0) {
+        weigth -= results.tweets.is_answer.ratio * 100 * 0.5;
+    }
+
+    if (weigth - results.tweets.is_original_post.ratio * 100 > 0) {
+        weigth -= results.tweets.is_original_post.ratio * 100;
+    }
+    
+    if (!results.is_alphanumeric.name && !results.is_alphanumeric.screen_name && results.name_screen_name_matches && weigth >= 50) {
+        weigth -= 50;
+    } else if ((!results.is_alphanumeric.name && !results.is_alphanumeric.screen_name) && weigth >= 30) {
+        weigth -= 30;
+    } else if ((!results.is_alphanumeric.name || !results.is_alphanumeric.screen_name) && weigth >= 10) {
+        weigth -= 10;
+    } else if (results.is_alphanumeric.name && results.is_alphanumeric.screen_name && weigth <= 100) {
+        weigth += 50;
+    } else if((results.is_alphanumeric.name || results.is_alphanumeric.screen_name) && weigth <= 100) {
+        weigth += 25;
+    }
+
+    if (weigth > 100) {
+        weigth = 100;
+    }
+
+    return weigth;
 }
 
 exports.bot_check = function(user, timeline) {
@@ -143,7 +178,8 @@ exports.bot_check = function(user, timeline) {
             is_quote: { count: 0, ratio: 0.0 },
             is_answer: { count: 0, ratio: 0.0 },
             is_original_post: { count: 0, ratio: 0.0 }
-        }
+        },
+        analysis: 0
     };
 
     results = update_user_stats(user, results);
@@ -151,6 +187,8 @@ exports.bot_check = function(user, timeline) {
     results = update_tweets_stats(timeline, results);
 
     results = update_tweets_ratios(results, timeline.length);
+
+    results.analysis = bot_analysis(results);
 
     return results;
 }

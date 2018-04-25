@@ -42,9 +42,13 @@ router.get('/botcheck/:screen_name', function(req, res) {
 		.catch((err) => {
 			res.status(400).send(err);
 		})
-		.then((timeline) => {
-			var result = TwitterDetector.bot_check(user.data, timeline.data);
-			res.status(200).json(result);
+		.then((result) => {
+			if (result.resp.statusCode != 200) {
+				res.status(400).send(result.data.error);
+			} else {
+				var analysis = TwitterDetector.bot_check(user.data, result.data);
+				res.status(200).json(analysis);
+			}
 		}));
 });
 
