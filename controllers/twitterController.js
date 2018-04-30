@@ -54,8 +54,7 @@ var has_link = function(string) {
     const url = XRegExp('([a-zA-Z0-9]+://)?([a-zA-Z0-9_]+:[a-zA-Z0-9_]+@)?([a-zA-Z0-9.-]+\\.[A-Za-z]{2,4})(:[0-9]+)?(/.*)?');
     
     var has_link = url.test(string);
-    console.log(string);
-    console.log(has_link);
+
     return has_link;
 }
 
@@ -123,7 +122,7 @@ var update_tweets_stats = function (timeline, results) {
         if (has_link(tweet.text)) {
             results.tweets.has_link.count += 1;
         }
-
+        
         var aux = checkHashtags(hashtags, tweet);
         if (aux.length > 0) {
             results.tweets.hashtags.count += 1;
@@ -171,74 +170,36 @@ var update_tweets_ratios = function (results, size) {
     return results;
 }
 
-var bot_points_analysis = function(results) {
-    var weigth = results.followers_following_ratio * 7 +
-                results.statuses_ratio * 1.6 +
-                results.tweets.has_link.ratio * 100 * 1.2 +
-                results.tweets.is_retweet.ratio * 100 * 1.1 +
-                results.tweets.is_quote.ratio * 100 +
-                results.tweets.is_fake_rt.ratio * 100 * 2;
-
-    if (weigth - results.tweets.is_answer.ratio * 100 * 0.5 > 0) {
-        weigth -= results.tweets.is_answer.ratio * 100 * 0.5;
-    }
-
-    if (weigth - results.tweets.is_original_post.ratio * 100 > 0) {
-        weigth -= results.tweets.is_original_post.ratio * 100;
-    }
-    
-    if (!results.is_alphanumeric.name && !results.is_alphanumeric.screen_name && results.name_screen_name_matches && weigth >= 8) {
-        weigth -= 8;
-    } else if ((!results.is_alphanumeric.name && !results.is_alphanumeric.screen_name) && weigth >= 3) {
-        weigth -= 3;
-    } else if ((!results.is_alphanumeric.name || !results.is_alphanumeric.screen_name) && weigth >= 1) {
-        weigth -= 1;
-    } else if (results.is_alphanumeric.name && results.is_alphanumeric.screen_name && weigth <= 10) {
-        weigth += 10;
-    } else if((results.is_alphanumeric.name || results.is_alphanumeric.screen_name) && weigth <= 2) {
-        weigth += 2;
-    }
-
-    if (weigth > 100) {
-        weigth = 100;
-    }
-
-    return weigth;
-}
-
 var bot_boolean_analysis = function(results) {
     var result = 0;
-    
-    // 0 - not suspicious
-    // 1 - a little suspicious
-    // 2 - suspicious
-    // 2 - very suspicious
 
     // ff_ratio
-    if (results.followers_following_ratio > 20) {
-        results.boolean_analysis.ff_ratio = 3;
+    if (results.followers_following_ratio > 35) {
+        results.boolean_analysis.ff_ratio = 7;
+    } else if (results.followers_following_ratio > 25) {
+        results.boolean_analysis.ff_ratio = 5;
     } else if (results.followers_following_ratio > 15) {
-        results.boolean_analysis.ff_ratio = 2;
+        results.boolean_analysis.ff_ratio = 3;
     } else if (results.followers_following_ratio > 10) {
         results.boolean_analysis.ff_ratio = 1;
     }
     // statuses_ratio
     if (results.statuses_ratio > 125) {
-        results.boolean_analysis.statuses_ratio = 6;
+        results.boolean_analysis.statuses_ratio = 15;
     } else if (results.statuses_ratio > 75) {
-        results.boolean_analysis.statuses_ratio = 4;
+        results.boolean_analysis.statuses_ratio = 12;
     } else if (results.statuses_ratio > 50) {
-        results.boolean_analysis.statuses_ratio = 3;
+        results.boolean_analysis.statuses_ratio = 9;
     } else if (results.statuses_ratio > 35) {
-        results.boolean_analysis.statuses_ratio = 2;
+        results.boolean_analysis.statuses_ratio = 6;
     } else if (results.statuses_ratio > 15) {
-        results.boolean_analysis.statuses_ratio = 1;
+        results.boolean_analysis.statuses_ratio = 3;
     }
     // profile
     if ((results.is_alphanumeric.name && results.is_alphanumeric.screen_name) && (results.name_screen_name_matches.name_screen || results.name_screen_name_matches.name_screen_description)) {
-        results.boolean_analysis.profile = 4;
+        results.boolean_analysis.profile = 6;
     } else if (results.name_screen_name_matches.name_screen && results.name_screen_name_matches.name_screen_description) {
-        results.boolean_analysis.profile = 3;
+        results.boolean_analysis.profile = 4;
     } else if ((results.is_alphanumeric.name && results.is_alphanumeric.screen_name) || (results.name_screen_name_matches.name_screen || results.name_screen_name_matches.name_screen_description)) {
         results.boolean_analysis.profile = 2;
     } else if (results.is_alphanumeric.name || results.is_alphanumeric.screen_name) {
@@ -246,40 +207,64 @@ var bot_boolean_analysis = function(results) {
     }
     // suspicious_behavior
     if (results.tweets.hashtags.ratio > 0.90) {
-        results.boolean_analysis.suspicious_hashtag = 6;
+        results.boolean_analysis.suspicious_hashtag = 9;
     } else if (results.tweets.is_retweet.ratio > 0.75 || results.tweets.is_fake_rt.count > 1) {
-        results.boolean_analysis.suspicious_hashtag = 3;
+        results.boolean_analysis.suspicious_hashtag = 7;
     } else if (results.tweets.is_retweet.ratio > 0.55) {
-        results.boolean_analysis.suspicious_hashtag = 2;
+        results.boolean_analysis.suspicious_hashtag = 5;
     } else if (results.tweets.is_retweet.ratio > 0.35) {
+        results.boolean_analysis.suspicious_hashtag = 3;
+    } else if (results.tweets.is_retweet.ratio > 0.15) {
         results.boolean_analysis.suspicious_hashtag = 1;
     }
 
     if (results.tweets.is_retweet.ratio > 0.90 || results.tweets.is_fake_rt.ratio > 0.1) {
-        results.boolean_analysis.suspicious_rt = 6;
+        results.boolean_analysis.suspicious_rt = 10;
     } else if (results.tweets.is_retweet.ratio > 0.75 || results.tweets.is_fake_rt.count > 1) {
-        results.boolean_analysis.suspicious_rt = 3;
+        results.boolean_analysis.suspicious_rt = 8;
     } else if (results.tweets.is_retweet.ratio > 0.55) {
-        results.boolean_analysis.suspicious_rt = 2;
+        results.boolean_analysis.suspicious_rt = 6;
     } else if (results.tweets.is_retweet.ratio > 0.35) {
-        results.boolean_analysis.suspicious_rt = 1;
+        results.boolean_analysis.suspicious_rt = 4;
+    } else if (results.tweets.is_retweet.ratio > 0.15) {
+        results.boolean_analysis.suspicious_rt = 2;
     }
 
     if (results.tweets.is_quote.ratio > 0.90 || results.tweets.has_link.ratio > 0.90) {
-        results.boolean_analysis.suspicious_quote = 6;
+        results.boolean_analysis.suspicious_quote = 15;
     } else if (results.tweets.is_quote.ratio > 0.75 || results.tweets.has_link.ratio > 0.75) {
-        results.boolean_analysis.suspicious_quote = 3;
+        results.boolean_analysis.suspicious_quote = 12;
     } else if (results.tweets.is_quote.ratio > 0.55 || results.tweets.has_link.ratio > 0.55) {
-        results.boolean_analysis.suspicious_quote = 2;
+        results.boolean_analysis.suspicious_quote = 9;
     } else if (results.tweets.is_quote.ratio > 0.35 || results.tweets.has_link.ratio > 0.35) {
-        results.boolean_analysis.suspicious_quote = 1;
+        results.boolean_analysis.suspicious_quote = 6;
+    } else if (results.tweets.is_quote.ratio > 0.15 || results.tweets.has_link.ratio > 0.15) {
+        results.boolean_analysis.suspicious_quote = 3;
     }
 
     // result
     result += results.boolean_analysis.ff_ratio + results.boolean_analysis.statuses_ratio + results.boolean_analysis.profile + results.boolean_analysis.suspicious_hashtag + results.boolean_analysis.suspicious_rt + results.boolean_analysis.suspicious_quote;
-    results.boolean_analysis.result = result / 31;
+    results.boolean_analysis.suspicious_level.value = result / 60;
 
     return results.boolean_analysis;
+}
+
+var update_suspicious_level = function (value) {
+    var level = '';
+
+    if (value > 0.8) {
+        level = 'Extremamente suspeito';
+    } else if (value > 0.6) {
+        level = 'Muito Suspeito';
+    } else if (value > 0.4) {
+        level = 'Suspeito';
+    } else if (value > 0.2) {
+        level = 'Pouco suspeito';
+    } else {
+        level = 'Não suspeito'
+    }
+
+    return level;
 }
 
 exports.bot_check = function(user, timeline) {
@@ -297,7 +282,6 @@ exports.bot_check = function(user, timeline) {
             is_answer: { count: 0, ratio: 0.0 },
             is_original_post: { count: 0, ratio: 0.0 }
         },
-        points_analysis: 0,
         boolean_analysis: {
             ff_ratio: 0,
             statuses_ratio: 0,
@@ -305,7 +289,10 @@ exports.bot_check = function(user, timeline) {
             suspicious_hashtag: 0,
             suspicious_rt: 0,
             suspicious_quote: 0,
-            result: 0
+            suspicious_level: {
+                level: '',
+                value: 0
+            }
         }
     };
 
@@ -315,9 +302,9 @@ exports.bot_check = function(user, timeline) {
 
     results = update_tweets_ratios(results, timeline.length);
 
-    results.points_analysis = bot_points_analysis(results);
-
     results.boolean_analysis = bot_boolean_analysis(results);
+
+    results.boolean_analysis.suspicious_level.level = update_suspicious_level(results.boolean_analysis.suspicious_level.value);
 
     return results;
 }

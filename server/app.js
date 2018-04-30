@@ -3,9 +3,12 @@ var express         = require('express');
 var logger          = require('morgan');
 var bodyParser      = require('body-parser');
 var Twit 			      = require('twit');
+var mongoose        = require('mongoose');
 
-// Starting Express and Twit
+// Starting Express and Mongo
 var app = express();
+var db = require('../util/config');
+mongoose.connect(db.local_db_url);
 
 // Define middleware
 app.use(logger('dev'));
