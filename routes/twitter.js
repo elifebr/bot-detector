@@ -5,8 +5,8 @@ var TwitterDetector	= require('../controllers/twitterController.js');
 var SuspiciousUser	= require('../models/SuspiciousUser.js');
 
 var router 			= express.Router();
-var twitter			= new Twit(config.twitter_keys.account_app);
-var is_user			= false;
+var actual_key		= 0;
+var twitter			= new Twit(config.twitter_keys[actual_key]);
 
 router.get('/suspicious_users', function (req, res) {
 	SuspiciousUser.find({})
@@ -20,7 +20,8 @@ router.get('/suspicious_users', function (req, res) {
 
 router.get('/botcheck/:screen_name', function(req, res) {
 	var req_user = req.params.screen_name;
-
+	console.log(config.twitter_keys[actual_key]);
+	console.log(actual_key);
 	SuspiciousUser.findOne({screen_name: req_user})
 		.catch((err) => {
 			res.status(400).send('Mongo error');
@@ -38,14 +39,14 @@ router.get('/botcheck/:screen_name', function(req, res) {
 					if (result.resp.statusCode != 200 || !result.data[0].user) { //not_found or another error
 						res.status(400).send(result.data.error);
 					} else if (result.resp.statusCode == 429) { //rate_limit
-		
-						if (!is_user) {
-							twitter = new Twit(config.twitter_keys.account_user);
-							is_user = true;
-						} else {
-							twitter	= new Twit(config.twitter_keys.account_app);
-							is_user = false;
+						
+						actual_key += 1;
+
+						if (actual_key >= 4) {
+							actual_key = 0;
 						}
+						
+						twitter	= new Twit(config.twitter_keys[actual_key]);
 		
 						twitter.get('statuses/user_timeline', { screen_name: req_user, count: 200, include_rts: true })
 							.catch((err) => {
@@ -66,7 +67,7 @@ router.get('/botcheck/:screen_name', function(req, res) {
 											if (err) {
 												res.status(400).send('Mongo error.');
 											} else {
-												res.status(200).json(analysis);
+												res.status(200).json(analysis.boolean_analysis.suspicious_level);
 											}
 										});
 									} else {
