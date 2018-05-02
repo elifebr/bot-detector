@@ -20,8 +20,7 @@ router.get('/suspicious_users', function (req, res) {
 
 router.get('/botcheck/:screen_name', function(req, res) {
 	var req_user = req.params.screen_name;
-	console.log(config.twitter_keys[actual_key]);
-	console.log(actual_key);
+
 	SuspiciousUser.findOne({screen_name: req_user})
 		.catch((err) => {
 			res.status(400).send('Mongo error');
