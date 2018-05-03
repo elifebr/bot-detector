@@ -1,7 +1,7 @@
 # bot-detector
 
 ## About
-This app analysis a twitter account and returns a _JSON_ in the following format: { level: 'suspeito', value: 0.48 }. This result can be obtained using the GET `http://localhost:8080/twitter/botcheck/:screen_name`
+This app analysis a twitter account and returns a _JSON_ in the following format: { level: 'suspeito', value: 0.48 }. This result can be obtained using the GET `http://localhost:8080/twitter/botcheck/:screen_name` route.
 
 ## Requirements
 
