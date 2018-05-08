@@ -8,7 +8,7 @@ var mongoose        = require('mongoose');
 // Starting Express and Mongo
 var app = express();
 var db = require('../util/config');
-mongoose.connect(db.local_db_url);
+mongoose.connect(db.nouser_db_url);
 
 // Define middleware
 app.use(logger('dev'));

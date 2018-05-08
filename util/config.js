@@ -1,25 +1,27 @@
+require('dotenv').load();
+
 var twitter_config = [
 	{
-		consumer_key: "2iav6kFkEY3tziIh286tHIwcB",
-		consumer_secret: "klefLEOnqNGc0XY3CFTPzXc4jEZJ2UJNCWkstY6BL4hAP8clRU",
+		consumer_key: process.env.TWITTER_APP_1_KEY,
+		consumer_secret: process.env.TWITTER_APP_1_SECRET,
 		app_only_auth: true
 	},
 	{
-		consumer_key: "2iav6kFkEY3tziIh286tHIwcB",
-		consumer_secret: "klefLEOnqNGc0XY3CFTPzXc4jEZJ2UJNCWkstY6BL4hAP8clRU",
-		access_token: "860864502887317504-jTtCQmfgvxEGxVzBL07OssTDxePETJg",
-		access_token_secret: "axc1MfVPdMIAdkohYEUC2miMxCLgarLvbLyCR1JdkFnRy"
+		consumer_key: process.env.TWITTER_APP_1_KEY,
+		consumer_secret: process.env.TWITTER_APP_1_SECRET,
+		access_token: process.env.TWITTER_USER_1_TOKEN,
+		access_token_secret: process.env.TWITTER_USER_1_TOKEN_SECRET
 	},
 	{
-		consumer_key: "1gaOoVg8EQAIuhiQQgeg7sZjV",
-		consumer_secret: "8bm6UKBBZdWJcdqtz0Fyq9ri5N4xOKYMxg4Bg4e3PeSnGnbYB0",
+		consumer_key: process.env.TWITTER_APP_2_KEY,
+		consumer_secret: process.env.TWITTER_APP_2_SECRET,
 		app_only_auth: true
 	},
 	{
-		consumer_key: "1gaOoVg8EQAIuhiQQgeg7sZjV",
-		consumer_secret: "8bm6UKBBZdWJcdqtz0Fyq9ri5N4xOKYMxg4Bg4e3PeSnGnbYB0",
-		access_token: "1018156508-3JAUbIelpSAyPPygcCEXQ4H6qyAQm9Kw7lx1d0U",
-		access_token_secret: "j3ENh712UlNDEyY5VMyQO613QTGnpEPlF4QxPFHNTksSS"
+		consumer_key: process.env.TWITTER_APP_2_KEY,
+		consumer_secret: process.env.TWITTER_APP_2_SECRET,
+		access_token: process.env.TWITTER_USER_2_TOKEN,
+		access_token_secret: process.env.TWITTER_USER_2_TOKEN_SECRET
 	}
 ];
 
@@ -28,6 +30,6 @@ var instagram_config = {};
 module.exports = {
 	twitter_keys: twitter_config,
 	instagram_keys: instagram_config,
-	local_db_url : 'mongodb://localhost/bot-detector-dev',
-	db_url: ''
+	nouser_db_url : 'mongodb://' + process.env.MONGO_HOST + '/bot-detector',
+	db_url: 'mongodb://' + process.env.MONGO_USER + ':' + process.env.MONGO_PASS + '@' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/bot-detector'
 };

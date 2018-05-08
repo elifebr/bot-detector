@@ -27,7 +27,6 @@ router.get('/botcheck/:screen_name', function(req, res) {
 		})
 		.then((user_found) => { 
 			if (user_found) { // Suspicious user cached
-				console.log('user_found');
 				res.status(200).json(user_found.suspicious_level);
 			} else {
 				twitter.get('statuses/user_timeline', { screen_name: req_user, count: 200, include_rts: true })
