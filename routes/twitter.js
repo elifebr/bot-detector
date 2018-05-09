@@ -98,4 +98,159 @@ router.get('/botcheck/:screen_name', function(req, res) {
 		});
 });
 
+router.post('/botcheck/', function(req, res) {
+	var users = req.body.screen_names;
+	var requests = 0;
+	var responses = [];
+
+	for (var i = 0; i < users.length; i++) {
+		let auxUser = { user: users[i], index: i };
+
+		SuspiciousUser.findOne({screen_name: auxUser.user})
+		.catch((err) => {
+			responses[auxUser.index] = ('Mongo error');
+			requests++;
+
+			if (requests == users.length) {
+				done();
+			}
+		})
+		.then((user_found) => { 
+			if (user_found) { // Suspicious user cached
+				responses[auxUser.index] = (user_found.suspicious_level);
+				requests++;
+
+				if (requests == users.length) {
+					done();
+				}
+			} else {
+				twitter.get('statuses/user_timeline', { screen_name: auxUser.user, count: 200, include_rts: true })
+				.catch((err) => {
+					responses[auxUser.index] = (err);
+					requests++;
+
+					if (requests == users.length) {
+						done();
+					}
+				})
+				.then((result) => {
+					if (result.resp.statusCode != 200 || !result.data[0].user) { //not_found or another error
+						responses[auxUser.index] = (result.data);
+						requests++;
+
+						if (requests == users.length) {
+							done();
+						}
+					} else if (result.resp.statusCode == 429) { //rate_limit
+						
+						actual_key += 1;
+
+						if (actual_key >= 4) {
+							actual_key = 0;
+						}
+						
+						twitter	= new Twit(config.twitter_keys[actual_key]);
+		
+						twitter.get('statuses/user_timeline', { screen_name: auxUser.user, count: 200, include_rts: true })
+							.catch((err) => {
+								responses[auxUser.index] = (err);
+								requests++;
+
+								if (requests == users.length) {
+									done();
+								}
+							})
+							.then((result) => {
+								if (result.resp.statusCode != 200 || !result.data[0].user) { //not_found or another error
+									responses[auxUser.index] = (result.data);
+									requests++;
+
+									if (requests == users.length) {
+										done();
+									}
+								} else {
+									var analysis = TwitterDetector.bot_check(result.data[0].user, result.data);
+
+									if (analysis.boolean_analysis.suspicious_level.value > 0.4) { // Caching
+										var suspiciousUser = new SuspiciousUser();
+										suspiciousUser.screen_name = auxUser.user;
+										suspiciousUser.result = analysis;
+										suspiciousUser.suspicious_level = analysis.boolean_analysis.suspicious_level;
+			
+										suspiciousUser.save(function (err) {
+											if (err) {
+												responses[auxUser.index] = ('Mongo error');
+												requests++;
+
+												if (requests == users.length) {
+													done();
+												}
+											} else {
+												responses[auxUser.index] = (analysis.boolean_analysis.suspicious_level);
+												requests++;
+
+												if (requests == users.length) {
+													done();
+												}
+											}
+										});
+									} else {
+										res.status(200).json(analysis.boolean_analysis.suspicious_level);
+										requests++;
+												
+										if (requests == users.length) {
+											done();
+										}
+									}
+								}
+							});
+					} else { // 
+						var analysis = TwitterDetector.bot_check(result.data[0].user, result.data);
+
+						if (analysis.boolean_analysis.suspicious_level.value > 0.4) { // Caching
+							var suspiciousUser = new SuspiciousUser();
+							suspiciousUser.screen_name = auxUser.user;
+							suspiciousUser.result = analysis;
+							suspiciousUser.suspicious_level = analysis.boolean_analysis.suspicious_level;
+
+							suspiciousUser.save(function (err) {
+								if (err) {
+									responses[auxUser.index] = ('Mongo error');
+									requests++;
+
+									if (requests == users.length) {
+										done();
+									}
+								} else {
+									responses[auxUser.index] = (analysis.boolean_analysis.suspicious_level);
+									requests++;
+
+									if (requests == users.length) {
+										done();
+									}
+								}
+							});
+						} else {
+							responses[auxUser.index] = (analysis.boolean_analysis.suspicious_level);
+							requests++;
+
+							if (requests == users.length) {
+								done();
+							}
+						}
+					}
+				});
+			}
+		});
+	}
+
+	function done() {
+		if (requests == users.length) {
+			res.status(200).send(responses);
+		} else {
+			res.status(400).send('Error');
+		}
+	}
+});
+
 module.exports = router;
