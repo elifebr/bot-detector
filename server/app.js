@@ -23,7 +23,7 @@ app.use('/instagram', instagram);
 
 // Test API
 app.get('/', function(req, res) {
-  res.send('Express server listening on port 3000');
+  res.send('Express server listening on port ' + (process.env.PORT || 3000));
 });
 
 // Error handlers
