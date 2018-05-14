@@ -1,2 +1,4 @@
 rest.http
 .eslintrc.json
+/node_modules/
+package-lock.json
