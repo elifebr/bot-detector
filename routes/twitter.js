@@ -64,8 +64,8 @@ router.post('/botcheck/', function(req, res) {
 				})
 				.then((result) => {
 					
-					if (result.data.error) {
-						responses[auxUser.index] = { screen_name: auxUser.user, error: result.data.error };
+					if (result.data.error || result.data.errors) {
+						responses[auxUser.index] = { screen_name: auxUser.user, error: result.data.error || result.data.errors[0].message };
 						requests++;
 
 						if (requests == users.length) {
