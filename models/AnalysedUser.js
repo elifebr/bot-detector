@@ -1,9 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-var SuspiciousUserSchema = new Schema({
+var AnalysedUserSchema = new Schema({
   screen_name: String,
-  result: JSON,
   created: {
       type: Date,
       default: Date.now
@@ -11,6 +10,6 @@ var SuspiciousUserSchema = new Schema({
   suspicious_level: { level: String, value: Number }
 });
 
-var SuspiciousUser = mongoose.model('SuspiciousUser', SuspiciousUserSchema);
+var AnalysedUser = mongoose.model('AnalysedUser', AnalysedUserSchema);
 
-module.exports = SuspiciousUser;
+module.exports = AnalysedUser;
