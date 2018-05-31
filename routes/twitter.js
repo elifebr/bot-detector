@@ -114,7 +114,9 @@ router.post('/botcheck/', function(req, res) {
   users.forEach((user, i) => {
     if ((actual_key % 2 == 0 && (twitter_requests + 1) > 1499) || (actual_key % 2 != 0 && (twitter_requests + 1) > 899)) {
       if (actual_key == 7) {
-        verifyAccounts();
+        verifyAccounts((result) => {
+          console.log('Accounts verified.');
+        });
       }
       twitter_requests = 0;
       updateKeyInstance = SingletonClass.getInstance();
