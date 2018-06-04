@@ -106,6 +106,7 @@ router.get('/botcheck/:screen_name', function (req, res) {
 });
 
 router.post('/botcheck/', function(req, res) {
+  req.socket.setTimeout(600000);
 	var users = req.body.screen_names; // ["screen_name", "screen_name", "screen_name"]
 	var requests = 0;
   var responses = [];
