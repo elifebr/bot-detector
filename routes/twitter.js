@@ -93,7 +93,7 @@ router.get('/users', function (req, res) {
     });
 });
 
-router.get('/verifyAccounts/', function(req, res) {
+router.get('/verifyAccounts', function(req, res) {
   verifyAccounts((responses) => {
     res.send(responses);
   });
@@ -105,12 +105,27 @@ router.get('/botcheck/:screen_name', function (req, res) {
   });
 });
 
+router.get('/botcheck/cached/:screen_name', function(req, res) {
+  AnalysedUser.findOne({screen_name: req.params.screen_name})
+    .catch((err) => {
+      res.status(400).send(err);
+    })
+    .then((result) => {
+      res.status(200).json(result);
+    });
+});
+
 router.post('/botcheck/', function(req, res) {
   req.socket.setTimeout(600000);
+  
+  if (!req.body.screen_names) {
+    done();
+  }
+
 	var users = req.body.screen_names; // ["screen_name", "screen_name", "screen_name"]
 	var requests = 0;
   var responses = [];
-  var updateKeyInstance;
+  var updateKeyInstance = SingletonClass.killInstance();
   
   users.forEach((user, i) => {
     if ((actual_key % 2 == 0 && (twitter_requests + 1) > 1499) || (actual_key % 2 != 0 && (twitter_requests + 1) > 899)) {
