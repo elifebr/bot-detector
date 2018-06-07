@@ -32,9 +32,9 @@ var twitter = twitter_accounts[0];
 // ==================== UTILITY FUNCTIONS ====================
 var SingletonClass = (function(){
   function SingletonClass() {
-      actual_key = (actual_key + 1) % 8;
-      twitter	= twitter_accounts[actual_key];
-      console.log('Twitter key changed, key: ' + actual_key);
+    actual_key = (actual_key + 1) % 8;
+    twitter	= twitter_accounts[actual_key];
+    console.log('Twitter key changed, key: ' + actual_key);
   }
   var instance;
   return {
@@ -62,7 +62,17 @@ var verifyAccounts = function(cb) {
   twitter_accounts.forEach((twit_account, i) => {
     twit_account.get('/application/rate_limit_status', {resources: 'statuses'})
     .then((result) => {
-      responses[i] = result.data;
+      responses[i] = {};
+
+      if (result.data.rate_limit_context.hasOwnProperty('access_token')) {
+        responses[i].token = result.data.rate_limit_context.access_token;  
+      } else if (result.data.rate_limit_context.hasOwnProperty('application')) {
+        responses[i].token = result.data.rate_limit_context.application;
+      };
+
+      responses[i].remaining = result.data.resources.statuses['/statuses/user_timeline'].remaining;
+
+      //responses[i] = result.data;
       requests++;
       if (requests == twitter_accounts.length) {
         return cb(responses);
@@ -121,17 +131,19 @@ router.post('/botcheck/', function(req, res) {
   if (!req.body.screen_names) {
     done();
   }
-
-	var users = req.body.screen_names; // ["screen_name", "screen_name", "screen_name"]
+  var users = req.body.screen_names; // ["screen_name", "screen_name", "screen_name"]
 	var requests = 0;
   var responses = [];
   var updateKeyInstance = SingletonClass.killInstance();
-  
+
+  console.log('Twitter requests: ' + twitter_requests + ' | Payload size: ' + users.length);
+
   users.forEach((user, i) => {
     if ((actual_key % 2 == 0 && (twitter_requests + 1) > 1499) || (actual_key % 2 != 0 && (twitter_requests + 1) > 899)) {
       if (actual_key == 7) {
         verifyAccounts((result) => {
           console.log('Accounts verified.');
+          console.log(result);
         });
       }
       twitter_requests = 0;
@@ -139,22 +151,22 @@ router.post('/botcheck/', function(req, res) {
     }
 
     AnalysedUser.findOne({screen_name: user}) // Search if the user is already saved on the bd.
-		.catch((err) => {
-			responses[i] = { screen_name: user, error: "Mongo error." };
+    .catch((err) => {
+      responses[i] = { screen_name: user, error: "Mongo error." };
       requests++;
 
-			if (requests == users.length) {
-				done();
-			}
-		})
-		.then((user_found) => { 
-			if (user_found) { // AnalysedUser cached
-				responses[i] = { screen_name: user, value: user_found.suspicious_level.value };
+      if (requests == users.length) {
+        done();
+      }
+    })
+    .then((user_found) => { 
+      if (user_found) { // AnalysedUser cached
+        responses[i] = { screen_name: user, value: user_found.suspicious_level.value };
         requests++;
 
-				if (requests == users.length) {
-					done();
-				}
+        if (requests == users.length) {
+          done();
+        }
       } else { // AnalysedUser not found
         twitter.get('statuses/user_timeline', { screen_name: user, count: 200, include_rts: true }, function (err, data, result) {
           if (err) {
@@ -166,7 +178,7 @@ router.post('/botcheck/', function(req, res) {
               done();
             }
           } else {
-            if (data) {
+            if (data && data[0] && data[0].user) {
               var analysis = TwitterDetector.bot_check(data[0].user, data);
 
               var analysedUser = new AnalysedUser();
@@ -192,11 +204,28 @@ router.post('/botcheck/', function(req, res) {
                     done();
                   }
                 });		
+            } else if (data) {
+              console.log(data);
+              responses[i] = { screen_name: user, error: 'User not found.' };
+              requests++;
+              twitter_requests++;
+
+              if (requests == users.length) {
+                done();
+              }
+            } else {
+              responses[i] = { screen_name: user, error: 'Something went wrong.' };
+              requests++;
+              twitter_requests++;
+
+              if (requests == users.length) {
+                done();
+              }
             }
           }
         });
-			}
-		});
+      }
+    });
   });
 
 	function done() {
