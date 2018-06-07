@@ -136,7 +136,6 @@ router.post('/botcheck/', function(req, res) {
   var responses = [];
   var db_queries_time = 0;
   var api_queries_time = 0;
-  let api_start = Date.now();
   var updateKeyInstance = SingletonClass.killInstance();
 
   users.forEach((user, i) => {
@@ -172,6 +171,7 @@ router.post('/botcheck/', function(req, res) {
           done();
         }
       } else { // AnalysedUser not found
+        let api_start = Date.now();
         twitter.get('statuses/user_timeline', { screen_name: user, count: 200, include_rts: true }, function (err, data, result) {
           let api_end = Date.now();
           api_queries_time += (api_end - api_start)/1000;
