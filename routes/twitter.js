@@ -134,9 +134,10 @@ router.post('/botcheck/', function(req, res) {
   var users = req.body.screen_names; // ["screen_name", "screen_name", "screen_name"]
 	var requests = 0;
   var responses = [];
+  var db_queries_time = 0;
+  var api_queries_time = 0;
+  let api_start = Date.now();
   var updateKeyInstance = SingletonClass.killInstance();
-
-  console.log('Twitter requests: ' + twitter_requests + ' | Payload size: ' + users.length);
 
   users.forEach((user, i) => {
     if ((actual_key % 2 == 0 && (twitter_requests + 1) > 1499) || (actual_key % 2 != 0 && (twitter_requests + 1) > 899)) {
@@ -149,7 +150,7 @@ router.post('/botcheck/', function(req, res) {
       twitter_requests = 0;
       updateKeyInstance = SingletonClass.getInstance();
     }
-
+    let db_start = Date.now();
     AnalysedUser.findOne({screen_name: user}) // Search if the user is already saved on the bd.
     .catch((err) => {
       responses[i] = { screen_name: user, error: "Mongo error." };
@@ -159,7 +160,10 @@ router.post('/botcheck/', function(req, res) {
         done();
       }
     })
-    .then((user_found) => { 
+    .then((user_found) => {
+      let db_end = Date.now();
+      db_queries_time += (db_end - db_start)/1000;
+
       if (user_found) { // AnalysedUser cached
         responses[i] = { screen_name: user, value: user_found.suspicious_level.value };
         requests++;
@@ -169,6 +173,8 @@ router.post('/botcheck/', function(req, res) {
         }
       } else { // AnalysedUser not found
         twitter.get('statuses/user_timeline', { screen_name: user, count: 200, include_rts: true }, function (err, data, result) {
+          let api_end = Date.now();
+          api_queries_time += (api_end - api_start)/1000;
           if (err) {
             responses[i] = { screen_name: user, error: err.message || 'Something went wrong.' };
             requests++;
@@ -229,6 +235,8 @@ router.post('/botcheck/', function(req, res) {
   });
 
 	function done() {
+    console.log('Twitter requests: ' + twitter_requests + ' | Payload size: ' + users.length + '\n'
+                + 'DB_queries_time: ' + db_queries_time/users.length + ' | API_queries_time: ' + api_queries_time/users.length);
 		if (requests == users.length) {
       updateKeyInstance = SingletonClass.killInstance();
 			res.status(200).send(responses);
